@@ -26,11 +26,15 @@ class RandomTransform(Transform):
             seed: Optional[int] = None,
             ):
         super().__init__(p=p)
-        self._seed = seed
+        self._seed = torch.randint(1, 2**63 - 1, (1,)) if seed is None else seed
 
     def __call__(self, sample: Subject):
-        self.check_seed()
-        return super().__call__(sample)
+        with torch.random.fork_rng():
+            self.check_seed()
+            transformed = super().__call__(sample)
+            random_params_dict = transformed.history[-1][1]
+            random_params_dict['seed'] = self._seed
+        return transformed
 
     @staticmethod
     def parse_range(
@@ -85,8 +89,7 @@ class RandomTransform(Transform):
         return self.parse_range(translation, 'translation')
 
     def check_seed(self) -> None:
-        if self._seed is not None:
-            torch.manual_seed(self._seed)
+        torch.manual_seed(self._seed)
 
     @staticmethod
     def fourier_transform(array: np.ndarray):
