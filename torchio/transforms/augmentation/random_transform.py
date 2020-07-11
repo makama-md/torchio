@@ -32,7 +32,12 @@ class RandomTransform(Transform):
         with torch.random.fork_rng():
             self.check_seed()
             transformed = super().__call__(sample)
-            random_params_dict = transformed.history[-1][1]
+        if transformed is sample:
+            pass  # the transform was not applied
+        elif not isinstance(transformed, Subject):
+            pass  # random parameters are stored in instances of Subject
+        else:
+            _, random_params_dict = transformed.history[-1]
             random_params_dict['seed'] = self._seed
         return transformed
 
