@@ -26,7 +26,12 @@ class RandomTransform(Transform):
             seed: Optional[int] = None,
             ):
         super().__init__(p=p)
-        self._seed = torch.randint(1, 2**63 - 1, (1,)) if seed is None else seed
+        self._seed = self.generate_seed() if seed is None else seed
+
+    @staticmethod
+    def generate_seed():
+        # https://github.com/fepegar/torchio/issues/208#issuecomment-650262724
+        return torch.randint(1, 2**63 - 1, (1,)).item()
 
     def __call__(self, sample: Subject):
         with torch.random.fork_rng():
