@@ -1,5 +1,7 @@
 import copy
+import json
 import pprint
+from collections import OrderedDict
 from typing import Any, Dict, List, Tuple
 from ..torchio import TYPE, INTENSITY
 from .image import Image
@@ -50,8 +52,8 @@ class Subject(dict):
             if isinstance(v, Image)
         ]
         self._parse_images(self.images)
+        self['history'] = '{}'
         self.__dict__.update(self)  # this allows me to do e.g. subject.t1
-        self.history = []
 
     def __repr__(self):
         string = (
@@ -124,9 +126,16 @@ class Subject(dict):
     def add_transform(
             self,
             transform: 'Transform',
-            parameters_dict: dict,
+            seed: int,
             ) -> None:
-        self.history.append((transform.name, parameters_dict))
+        dictionary = json.loads(self['history'], object_pairs_hook=OrderedDict)
+        dictionary[transform.__class__.__name__] = seed
+        string = json.dumps(dictionary)
+        self['history'] = string
+
+    def get_applied_transforms(self):
+        dictionary = json.loads(self['history'], object_pairs_hook=OrderedDict)
+        return [(name, params) for (name, params) in dictionary.items()]
 
     def load(self):
         for image in self.get_images(intensity_only=False):
